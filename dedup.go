@@ -27,7 +27,6 @@ type Dedup struct {
 
 // New give you a new Dedup context
 func New(Name string) (d *Dedup) {
-	// Bolt DB for done Objects for copy
 	d = &Dedup{}
 	d.lock = sync.RWMutex{}
 	d.name = Name
@@ -75,12 +74,15 @@ func (d *Dedup) Set(k string, v interface{}) {
 }
 
 // GetDups returns a copy of the map with the duplicated things
-func (d *Dedup) GetDups() map[string]interface{} {
-	rt := make(map[string]interface{})
+func (d *Dedup) GetDups() map[string][]interface{} {
+	rt := make(map[string][]interface{})
 	d.lock.RLock()
 	defer d.lock.RUnlock()
 	for k, v := range d.mapN {
-		rt[k] = v
+		rt[k] = make([]interface{}, len(v))
+		for i := range v {
+			rt[k] = append(rt[k], i)
+		}
 	}
 	return rt
 }

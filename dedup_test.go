@@ -47,16 +47,20 @@ func TestSet(t *testing.T) {
 	time.Sleep(1100 * time.Millisecond)
 	time.Sleep(1100 * time.Millisecond)
 	for i := 0; i < 100; i++ {
+		fatal := ""
 		wg.Add(1)
 		go func() {
 			if d.KeySetP(makeName()) {
-				t.Fatal("Random new string was in set, unlikely")
+				fatal = "Random new string was in set, unlikely"
 			}
 			if !d.KeySetP(saveName) {
-				t.Fatal("failed to retrieve set value")
+				fatal = "Random new string was in set, unlikely"
 			}
 			wg.Done()
 		}()
+		if fatal != "" {
+			t.Fatal(fatal)
+		}
 	}
 	wg.Wait()
 }
