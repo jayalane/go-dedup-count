@@ -16,8 +16,8 @@ I'm using it.
 
 Call "GetDups" and get the map of dups.  
 
-Call "Add" with a string and it will be added to the
-maps eventually.  
+Call "Set" with a string key and interface{} value and it will be
+added to the maps (not instantly). 
 
 *Who owns this code?*
 
@@ -25,10 +25,16 @@ Chris Lane
 
 *Adivce for starting out*
 
-If you integrate, please let me or them know of your experience and
-any suggestions for improvement.
+If you integrate, please let me know of your experience and any
+suggestions for improvement.
 
 The current API can best be seen in the _test files probably.  
+
+There is a "Set" to add new key/values, "Get" to retrieve, KetSetP to
+test membership, GetDups to get a copy of the dictionary with dups.
+
+New to make a new one and Close to shut down the go routine for the
+old one (then dereference it). 
 
 *Requirements*
 

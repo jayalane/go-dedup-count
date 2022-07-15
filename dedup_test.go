@@ -33,10 +33,10 @@ func TestSet(t *testing.T) {
 	defer d.Close()
 	saveName := makeName()
 	fmt.Println(saveName)
-	d.Add(saveName)
+	d.Set(saveName, "hi there")
 	for i := 0; i < 1; i++ {
 		//		go func() {
-		d.Add(makeName())
+		d.Set(makeName(), "whatever")
 		//		}()
 	}
 	//	for i := 0; i < 1; i++ {
@@ -49,10 +49,10 @@ func TestSet(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
 		go func() {
-			if d.InSet(makeName()) {
+			if d.KeySetP(makeName()) {
 				t.Fatal("Random new string was in set, unlikely")
 			}
-			if !d.InSet(saveName) {
+			if !d.KeySetP(saveName) {
 				t.Fatal("failed to retrieve set value")
 			}
 			wg.Done()

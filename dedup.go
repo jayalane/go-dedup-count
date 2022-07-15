@@ -8,14 +8,19 @@ import (
 	"sync"
 )
 
+type entry struct {
+	k string
+	v interface{}
+}
+
 // Dedup lets you feed in a lot of strings and later et the list of
 // dups. The API is non-blocking (channel send) and all the keys are
 // kept in memory (not some blooming thing)
 type Dedup struct {
 	lock    sync.RWMutex
-	map1    map[string]int // for keys seen 1 time
-	mapN    map[string]int // for keys seen >1 time
-	addChan chan string
+	map1    map[string]interface{}   // for keys seen 1 time
+	mapN    map[string][]interface{} // for keys seen >1 time
+	addChan chan entry
 	done    chan bool
 	name    string
 }
@@ -26,10 +31,10 @@ func New(Name string) (d *Dedup) {
 	d = &Dedup{}
 	d.lock = sync.RWMutex{}
 	d.name = Name
-	d.map1 = make(map[string]int)
-	d.mapN = make(map[string]int)
+	d.map1 = make(map[string]interface{})
+	d.mapN = make(map[string][]interface{})
 	d.done = make(chan bool, 2)
-	d.addChan = make(chan string, 1000000) // should be config driven
+	d.addChan = make(chan entry, 1000000) // should be config driven
 
 	go func() { // async writer
 		for {
@@ -38,16 +43,18 @@ func New(Name string) (d *Dedup) {
 				return
 			case s := <-d.addChan:
 				d.lock.Lock()
-				_, ok2 := d.mapN[s]
+				_, ok2 := d.mapN[s.k]
 				if ok2 {
-					d.mapN[s]++
+					d.mapN[s.k] = append(d.mapN[s.k], s.v)
 				} else {
-					_, ok1 := d.map1[s]
+					_, ok1 := d.map1[s.k]
 					if ok1 {
-						delete(d.map1, s)
-						d.mapN[s] = 1
+						delete(d.map1, s.k)
+						l := make([]interface{}, 0)
+						d.mapN[s.k] = append(l, s.v)
+
 					} else {
-						d.map1[s] = 1
+						d.map1[s.k] = s.v
 					}
 				}
 				d.lock.Unlock()
@@ -62,22 +69,43 @@ func (d *Dedup) Close() {
 	d.done <- true
 }
 
-// Add puts the string into the set eventually
-func (d *Dedup) Add(s string) {
-	d.addChan <- s
+// Set puts the string into the set eventually
+func (d *Dedup) Set(k string, v interface{}) {
+	d.addChan <- entry{k, v}
 }
 
-// GetDups returns the map with the duplicated things
-func (d *Dedup) GetDups() map[string]int {
-	return d.mapN
-}
-
-// InSet returns true if the string is in the set DB
-// currently it doesn't look at pending Set
-func (d *Dedup) InSet(s string) bool {
+// GetDups returns a copy of the map with the duplicated things
+func (d *Dedup) GetDups() map[string]interface{} {
+	rt := make(map[string]interface{})
 	d.lock.RLock()
 	defer d.lock.RUnlock()
-	_, ok1 := d.map1[s]
-	_, ok2 := d.mapN[s]
+	for k, v := range d.mapN {
+		rt[k] = v
+	}
+	return rt
+}
+
+// KeySetP returns true if the string is in the set DB
+// currently it doesn't look at pending Set
+func (d *Dedup) KeySetP(k string) bool {
+	d.lock.RLock()
+	defer d.lock.RUnlock()
+	_, ok1 := d.map1[k]
+	_, ok2 := d.mapN[k]
 	return bool(ok1 || ok2)
+}
+
+// Get returns the value and true if the string is in the maps
+func (d *Dedup) Get(s string) (interface{}, bool) {
+	d.lock.RLock()
+	defer d.lock.RUnlock()
+	v1, ok1 := d.map1[s]
+	if ok1 {
+		return v1, true
+	}
+	v2, ok2 := d.mapN[s]
+	if ok2 {
+		return v2, true
+	}
+	return nil, false
 }
