@@ -51,9 +51,9 @@ func New(Name string) (d *Dedup) {
 						delete(d.map1, s.k)
 						l := make([]interface{}, 0)
 						d.mapN[s.k] = append(l, s.v)
-
 					} else {
-						d.map1[s.k] = s.v
+						l := make([]interface{}, 0)
+						d.map1[s.k] = append(l, s.v)
 					}
 				}
 				d.lock.Unlock()

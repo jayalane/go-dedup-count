@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 )
@@ -28,39 +27,38 @@ func makeName() string {
 }
 
 func TestSet(t *testing.T) {
-	wg := new(sync.WaitGroup)
 	d := New("test1")
 	defer d.Close()
 	saveName := makeName()
 	fmt.Println(saveName)
 	d.Set(saveName, "hi there")
-	for i := 0; i < 1; i++ {
-		//		go func() {
-		d.Set(makeName(), "whatever")
-		//		}()
+	d.Set(saveName, "hi there 2")
+	for i := 0; i < 100; i++ {
+		d.Set(makeName(), makeName())
 	}
-	//	for i := 0; i < 1; i++ {
-	//		go func() {
-	//			d.Add(makeName()) // why both?
-	//		}()
-	//	}
-	time.Sleep(1100 * time.Millisecond)
 	time.Sleep(1100 * time.Millisecond)
 	for i := 0; i < 100; i++ {
 		fatal := ""
-		wg.Add(1)
-		go func() {
-			if d.KeySetP(makeName()) {
-				fatal = "Random new string was in set, unlikely"
-			}
-			if !d.KeySetP(saveName) {
-				fatal = "Random new string was in set, unlikely"
-			}
-			wg.Done()
-		}()
+		if d.KeySetP(makeName()) {
+			fatal = "Random new string was in set, unlikely"
+		}
+		if !d.KeySetP(saveName) {
+			fatal = "saveName was not still in set"
+		}
 		if fatal != "" {
-			t.Fatal(fatal)
+			t.Log(fatal)
+			t.Fail()
 		}
 	}
-	wg.Wait()
+	dups := d.GetDups()
+	// check that hi there is present with 2 values
+	v, ok := dups[saveName]
+	if !ok {
+		t.Log("savedName not in dups list")
+		t.Fail()
+	}
+	if len(v) != 2 {
+		t.Log("saveName not in dups list with 2 entries")
+		t.Fail()
+	}
 }
