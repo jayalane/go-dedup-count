@@ -51,8 +51,14 @@ func TestSet(t *testing.T) {
 		}
 	}
 	dups := d.GetDups()
+	if len(dups) > 1 {
+		t.Log("Too many dups")
+		t.Fail()
+	}
+	fmt.Println("Dups", dups)
 	// check that hi there is present with 2 values
 	v, ok := dups[saveName]
+	fmt.Println("save name Dups", v)
 	if !ok {
 		t.Log("savedName not in dups list")
 		t.Fail()

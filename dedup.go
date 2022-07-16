@@ -42,18 +42,19 @@ func New(Name string) (d *Dedup) {
 				return
 			case s := <-d.addChan:
 				d.lock.Lock()
-				_, ok2 := d.mapN[s.k]
+				v2, ok2 := d.mapN[s.k]
 				if ok2 {
-					d.mapN[s.k] = append(d.mapN[s.k], s.v)
+					d.mapN[s.k] = append(v2, s.v)
 				} else {
-					_, ok1 := d.map1[s.k]
+					v1, ok1 := d.map1[s.k]
 					if ok1 {
 						delete(d.map1, s.k)
-						l := make([]interface{}, 0)
-						d.mapN[s.k] = append(l, s.v)
+						l := make([]interface{}, 2)
+						l[0] = v1
+						l[1] = s.v
+						d.mapN[s.k] = l
 					} else {
-						l := make([]interface{}, 0)
-						d.map1[s.k] = append(l, s.v)
+						d.map1[s.k] = s.v
 					}
 				}
 				d.lock.Unlock()
@@ -80,8 +81,8 @@ func (d *Dedup) GetDups() map[string][]interface{} {
 	defer d.lock.RUnlock()
 	for k, v := range d.mapN {
 		rt[k] = make([]interface{}, len(v))
-		for i := range v {
-			rt[k] = append(rt[k], i)
+		for i, s := range v {
+			rt[k][i] = s
 		}
 	}
 	return rt
