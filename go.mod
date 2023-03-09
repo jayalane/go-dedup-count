@@ -1,3 +1,3 @@
 module github.com/jayalane/go-dedup-map
 
-go 1.19
+go 1.20
