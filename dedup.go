@@ -81,9 +81,7 @@ func (d *Dedup) GetDups() map[string][]interface{} {
 	defer d.lock.RUnlock()
 	for k, v := range d.mapN {
 		rt[k] = make([]interface{}, len(v))
-		for i, s := range v {
-			rt[k][i] = s
-		}
+		copy(rt[k], v)
 	}
 	return rt
 }
